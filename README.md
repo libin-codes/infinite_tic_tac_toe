@@ -1,10 +1,12 @@
-# Infinite Tic-Tac-Toe (Python Tkinter)
+# Infinite Tic-Tac-Toe
+
+<p align="center">
+  <img src="assets/logo.png" alt="Infinite Tic-Tac-Toe Logo" width="480">
+</p>
 
 A modern, fluid desktop implementation of **Infinite Tic-Tac-Toe** built with Python and Tkinter.
 
 Unlike traditional Tic-Tac-Toe which frequently ends in boring stalemates/draws, Infinite Tic-Tac-Toe keeps the game dynamic: **each player can only keep at most 3 marks on the board at any time**. When a player places their 4th mark, their oldest mark automatically fades away and vanishes!
-
----
 
 ## 🎮 How to Play & Rules
 

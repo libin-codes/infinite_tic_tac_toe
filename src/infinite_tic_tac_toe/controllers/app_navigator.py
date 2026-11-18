@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import random
+import sys
 import tkinter as tk
+from pathlib import Path
 from typing import Optional
 
 from infinite_tic_tac_toe.controllers.game_controller import GameController
@@ -67,6 +69,41 @@ class AppNavigator:
             except tk.TclError:
                 sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
                 self.root.geometry(f"{sw}x{sh}+0+0")
+
+        # Set application window icon (dock, taskbar, alt-tab, and title bar)
+        self._app_icons: list[tk.PhotoImage] = []
+        try:
+            # Check package-internal assets first (for uvx/pip), then repo root
+            candidates = [
+                Path(__file__).resolve().parent.parent / "assets",
+                Path(__file__).resolve().parent.parent.parent.parent / "assets",
+            ]
+            asset_dir = next((d for d in candidates if d.is_dir()), None)
+            if asset_dir:
+                ico_file = asset_dir / "icon.ico"
+                png_256 = asset_dir / "app_icon.png"
+                png_64 = asset_dir / "app_icon_64.png"
+                png_logo = asset_dir / "logo.png"
+
+                # Windows native window icon bitmap
+                if sys.platform.startswith("win") and ico_file.is_file():
+                    try:
+                        self.root.iconbitmap(default=str(ico_file))
+                    except Exception:
+                        pass
+
+                # Universal cross-platform window icon (X11, Wayland, Windows taskbar)
+                for path in (png_256, png_64, png_logo):
+                    if path.is_file():
+                        try:
+                            self._app_icons.append(tk.PhotoImage(file=str(path)))
+                        except Exception:
+                            pass
+
+                if self._app_icons:
+                    self.root.iconphoto(True, *self._app_icons)
+        except Exception:
+            pass
 
     def _clear_current_screen(self) -> None:
         self._cleanup_network()
