@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from infinite_tic_tac_toe.models.game import InfiniteTicTacToeLogic
 from infinite_tic_tac_toe.views.components.button import RoundedButton
@@ -25,6 +25,7 @@ class SidebarActions:
     reset_scores: Callable[[], None]
     show_rules: Callable[[], None]
     toggle_fullscreen: Callable[[], None]
+    leave_game: Optional[Callable[[], None]] = None
 
 
 class Sidebar(tk.Frame):
@@ -41,11 +42,11 @@ class Sidebar(tk.Frame):
     CARD_TOP = 0.19
     CARD_HEIGHT = 0.10
     CARD_STEP = 0.12
-    BUTTONS_TOP = 0.75
-    BUTTON_HEIGHT = 0.07
-    BUTTON_STEP = 0.080
+    BUTTONS_TOP = 0.68
+    BUTTON_HEIGHT = 0.065
+    BUTTON_STEP = 0.076
 
-    BUTTON_SPECS: Tuple[ButtonSpec, ...] = (
+    DEFAULT_BUTTON_SPECS: Tuple[ButtonSpec, ...] = (
         ButtonSpec("🔄 New Round (R)", "primary", "new_round"),
         ButtonSpec("↺ Reset Scores", "secondary", "reset_scores"),
         ButtonSpec("❓ How to Play", "secondary", "show_rules"),
@@ -104,11 +105,18 @@ class Sidebar(tk.Frame):
             self.cards[mark] = card
 
     def _build_buttons(self) -> None:
-        for index, spec in enumerate(self.BUTTON_SPECS):
+        specs = list(self.DEFAULT_BUTTON_SPECS)
+        if self._actions.leave_game:
+            specs.append(ButtonSpec("🏠 Main Menu", "muted", "leave_game"))
+
+        for index, spec in enumerate(specs):
+            action_fn = getattr(self._actions, spec.action, None)
+            if not action_fn:
+                continue
             button = RoundedButton(
                 self,
                 spec.label,
-                getattr(self._actions, spec.action),
+                action_fn,
                 self._styles[spec.style],
                 self._fonts,
                 parent_bg=self._palette.sidebar,
@@ -127,6 +135,12 @@ class Sidebar(tk.Frame):
     def set_button_enabled(self, action: str, enabled: bool) -> None:
         if action in self.buttons:
             self.buttons[action].set_enabled(enabled)
+
+    def update_player_labels(self, x_name: str = "Player X", o_name: str = "Player O") -> None:
+        if "X" in self.cards:
+            self.cards["X"]._name.configure(text=x_name)
+        if "O" in self.cards:
+            self.cards["O"]._name.configure(text=o_name)
 
     def update_players(self, game: InfiniteTicTacToeLogic, scores: Dict[str, int]) -> None:
         for mark, card in self.cards.items():

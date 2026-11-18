@@ -8,7 +8,11 @@ import tkinter as tk
 from typing import Callable, Optional
 
 from infinite_tic_tac_toe.models.game import Cell, InfiniteTicTacToeLogic
-from infinite_tic_tac_toe.views.board.effects import BoardViewState, ConfettiParticle, VanishEffect
+from infinite_tic_tac_toe.views.board.effects import (
+    BoardViewState,
+    ConfettiParticle,
+    VanishEffect,
+)
 from infinite_tic_tac_toe.views.board.metrics import BoardMetrics
 from infinite_tic_tac_toe.views.board.renderer import BoardRenderer
 from infinite_tic_tac_toe.views.theme import GRID_SIZE, Palette

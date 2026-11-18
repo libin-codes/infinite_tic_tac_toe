@@ -1,60 +1,71 @@
-"""Main application controller wiring game logic to views and user interactions."""
+"""Game controller coordinating game model, views, local clicks, and LAN network events."""
 
 from __future__ import annotations
 
 import tkinter as tk
 from tkinter import messagebox
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 from infinite_tic_tac_toe.models import GameSession, InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.network.connection import NetworkConnection
+from infinite_tic_tac_toe.network.protocol import MessageType
 from infinite_tic_tac_toe.views import (
     DEFAULT_WINDOW,
     MIN_WINDOW,
     PALETTE,
-    BoardView,
     FontBook,
-    RoundBanner,
+    GameScreen,
     RulesDialog,
-    Sidebar,
     SidebarActions,
     build_button_styles,
 )
 
 
 class GameController:
-    """Main application controller: wires game model, session, and views."""
+    """Manages an active game session, wiring views, local input, and LAN messages."""
 
-    # Pane proportions (grid weights): sidebar 2 : board area 5 (~29% / 71%)
-    SIDEBAR_WEIGHT = 2
-    MAIN_WEIGHT = 5
-
-    # Floating round banner: distance from top as fraction of window height
-    BANNER_TOP = 0.04
-
-    # Font scaling
     MIN_SCALE = 0.7
     MAX_SCALE = 1.2
     SCALE_EPSILON = 0.02
+    NETWORK_POLL_MS = 33
 
-    def __init__(self, root: tk.Tk) -> None:
-        self.root = root
+    def __init__(
+        self,
+        parent: tk.Misc,
+        network_conn: Optional[NetworkConnection] = None,
+        my_mark: str = "X",
+        my_name: str = "Player X",
+        opponent_name: str = "Player O",
+        on_leave_game: Optional[Callable[[], None]] = None,
+    ) -> None:
+        self.parent = parent
+        self.root = parent.winfo_toplevel()
+        self.network_conn = network_conn
+        self.my_mark = my_mark
+        self.my_name = my_name
+        self.opponent_name = opponent_name
+        self.on_leave_game = on_leave_game
+
         self.palette = PALETTE
         self.game = InfiniteTicTacToeLogic()
         self.session = GameSession()
         self.is_fullscreen = False
         self._scale = 1.0
+        self._poll_job: Optional[str] = None
 
-        self._configure_window()
-        self.fonts = FontBook(root)
+        self._configure_root_if_needed()
+        self.fonts = FontBook(self.root)
         self.styles = build_button_styles(self.palette)
 
-        self._build_layout()
+        self._build_screen()
         self._bind_events()
         self._refresh_all()
 
+        if self.network_conn:
+            self._schedule_network_poll()
+
     @property
     def scores(self) -> Dict[str, int]:
-        """Convenience property for session scores."""
         return self.session.scores
 
     @scores.setter
@@ -63,29 +74,72 @@ class GameController:
 
     @property
     def round_number(self) -> int:
-        """Convenience property for current round number."""
         return self.session.round_number
 
     @round_number.setter
     def round_number(self, val: int) -> None:
         self.session.round_number = val
 
-    # -- window --------------------------------------------------------------
+    # -- construction --------------------------------------------------------
 
-    def _configure_window(self) -> None:
-        self.root.title("Infinite Tic-Tac-Toe")
-        self.root.geometry(f"{DEFAULT_WINDOW[0]}x{DEFAULT_WINDOW[1]}")
-        self.root.minsize(*MIN_WINDOW)
-        self.root.configure(bg=self.palette.bg)
+    def _configure_root_if_needed(self) -> None:
+        # Only configure window if parent is root
+        if self.parent is self.root:
+            self.root.title("Infinite Tic-Tac-Toe")
+            self.root.geometry(f"{DEFAULT_WINDOW[0]}x{DEFAULT_WINDOW[1]}")
+            self.root.minsize(*MIN_WINDOW)
+            self.root.configure(bg=self.palette.bg)
 
-        try:
-            self.root.attributes("-zoomed", True)  # Linux
-        except tk.TclError:
-            try:
-                self.root.state("zoomed")  # Windows
-            except tk.TclError:
-                sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
-                self.root.geometry(f"{sw}x{sh}+0+0")
+    def _build_screen(self) -> None:
+        actions = SidebarActions(
+            new_round=self.on_new_round,
+            reset_scores=self.on_reset_all,
+            show_rules=self.show_rules,
+            toggle_fullscreen=self._toggle_fullscreen,
+            leave_game=self._handle_leave_game if self.on_leave_game else None,
+        )
+
+        self.screen = GameScreen(
+            self.parent,
+            self.palette,
+            self.fonts,
+            self.styles,
+            self.game,
+            actions,
+            on_cell_click=self._handle_cell_click,
+        )
+        self.screen.pack(fill=tk.BOTH, expand=True)
+
+        # Expose widgets directly for compatibility
+        self.sidebar = self.screen.sidebar
+        self.board_view = self.screen.board_view
+        self.banner = self.screen.banner
+
+        # Set player names on sidebar cards
+        if self.network_conn:
+            x_name = f"{self.my_name} (You)" if self.my_mark == "X" else self.opponent_name
+            o_name = f"{self.my_name} (You)" if self.my_mark == "O" else self.opponent_name
+            self.sidebar.update_player_labels(x_name, o_name)
+
+    def _bind_events(self) -> None:
+        self.root.bind("<r>", lambda e: self.on_new_round())
+        self.root.bind("<R>", lambda e: self.on_new_round())
+        self.root.bind("<F11>", self._toggle_fullscreen)
+        self.root.bind("<Escape>", self._exit_fullscreen)
+        self.root.bind("<Configure>", self._on_root_configure)
+
+    def destroy(self) -> None:
+        """Tear down controller, screen, and cancel background polls."""
+        if self._poll_job is not None:
+            self.root.after_cancel(self._poll_job)
+            self._poll_job = None
+        if self.network_conn:
+            self.network_conn.send_message(MessageType.LEAVE, reason="Player quit")
+            self.network_conn.close()
+            self.network_conn = None
+        self.screen.destroy()
+
+    # -- window handling -----------------------------------------------------
 
     def _toggle_fullscreen(self, event: Optional[tk.Event] = None) -> None:
         self._set_fullscreen(not self.is_fullscreen)
@@ -101,47 +155,7 @@ class GameController:
         except tk.TclError:
             pass
 
-    # -- layout --------------------------------------------------------------
-
-    def _build_layout(self) -> None:
-        root = self.root
-        root.grid_rowconfigure(0, weight=1)
-        root.grid_columnconfigure(0, weight=self.SIDEBAR_WEIGHT, uniform="panes")
-        root.grid_columnconfigure(1, weight=0)
-        root.grid_columnconfigure(2, weight=self.MAIN_WEIGHT, uniform="panes")
-
-        self.sidebar = Sidebar(
-            root, self.palette, self.fonts, self.styles,
-            SidebarActions(
-                new_round=self.on_new_round,
-                reset_scores=self.on_reset_all,
-                show_rules=self.show_rules,
-                toggle_fullscreen=self._toggle_fullscreen,
-            ),
-        )
-        self.sidebar.grid(row=0, column=0, sticky="nsew")
-
-        tk.Frame(root, bg=self.palette.divider, width=1).grid(row=0, column=1, sticky="ns")
-
-        self.main_area = tk.Frame(root, bg=self.palette.bg)
-        self.main_area.grid(row=0, column=2, sticky="nsew")
-
-        self.board_view = BoardView(self.main_area, self.game, self.palette, self._handle_cell_click)
-        self.board_view.place(relx=0, rely=0, relwidth=1, relheight=1)
-
-        # Created after the board so it floats above it.
-        self.banner = RoundBanner(self.main_area, self.palette, self.fonts)
-        self.banner.place(relx=0.5, rely=self.BANNER_TOP, anchor="n")
-
-    def _bind_events(self) -> None:
-        self.root.bind("<r>", lambda e: self.on_new_round())
-        self.root.bind("<R>", lambda e: self.on_new_round())
-        self.root.bind("<F11>", self._toggle_fullscreen)
-        self.root.bind("<Escape>", self._exit_fullscreen)
-        self.root.bind("<Configure>", self._on_root_configure)
-
     def _on_root_configure(self, event: tk.Event) -> None:
-        """Rescale all fonts proportionally to the window size."""
         if event.widget is not self.root:
             return
         factor = min(event.width / DEFAULT_WINDOW[0], event.height / DEFAULT_WINDOW[1])
@@ -151,8 +165,7 @@ class GameController:
 
         self._scale = factor
         self.fonts.rescale(factor)
-        self.sidebar.redraw_buttons()
-        self.banner.redraw()
+        self.screen.redraw_widgets()
 
     # -- view updates --------------------------------------------------------
 
@@ -163,14 +176,31 @@ class GameController:
         self.board_view.render()
 
     def _show_round(self) -> None:
-        self.banner.set(f"ROUND {self.session.round_number}")
+        if self.network_conn and not self.game.game_over:
+            if self.game.current_player == self.my_mark:
+                self.banner.set(f"ROUND {self.session.round_number} — YOUR TURN ({self.my_mark})", self.palette.x if self.my_mark == "X" else self.palette.o)
+            else:
+                self.banner.set(f"ROUND {self.session.round_number} — OPPONENT'S TURN", self.palette.text_dim)
+        else:
+            self.banner.set(f"ROUND {self.session.round_number}")
 
     def _show_winner(self, winner: str) -> None:
-        self.banner.set(f"PLAYER {winner} WINS ROUND {self.session.round_number}!")
+        if self.network_conn:
+            if winner == self.my_mark:
+                self.banner.set(f"🎉 YOU WON ROUND {self.session.round_number}!", self.palette.gold)
+            else:
+                self.banner.set(f"PLAYER {winner} WON ROUND {self.session.round_number}!", self.palette.text)
+        else:
+            self.banner.set(f"PLAYER {winner} WINS ROUND {self.session.round_number}!")
 
-    # -- game flow -----------------------------------------------------------
+    # -- move handling -------------------------------------------------------
 
     def _handle_cell_click(self, r: int, c: int) -> None:
+        if self.network_conn:
+            # Enforce turn in LAN mode
+            if self.game.current_player != self.my_mark:
+                return
+
         if not self.game.is_valid_move(r, c):
             return
 
@@ -178,6 +208,17 @@ class GameController:
         if not result["success"]:
             return
 
+        if self.network_conn:
+            self.network_conn.send_message(
+                MessageType.MOVE,
+                r=r,
+                c=c,
+                player=result["player"],
+            )
+
+        self._apply_move_effects(result)
+
+    def _apply_move_effects(self, result: Dict[str, Any]) -> None:
         if result["vanished"]:
             self.board_view.play_vanish(tuple(result["vanished"]), result["player"])
 
@@ -190,8 +231,11 @@ class GameController:
         else:
             self.sidebar.update_players(self.game, self.session.scores)
             self._show_round()
+
         self.sidebar.set_button_enabled("new_round", not self.game.is_empty)
         self.board_view.render()
+
+    # -- game actions --------------------------------------------------------
 
     def on_new_round(self) -> None:
         if self.game.is_empty:
@@ -210,6 +254,13 @@ class GameController:
         self.board_view.clear_effects()
         self._refresh_all()
 
+        if self.network_conn:
+            self.network_conn.send_message(
+                MessageType.NEW_ROUND,
+                round_number=self.session.round_number,
+                starting_player=self.game.starting_player,
+            )
+
     def on_reset_all(self) -> None:
         if self.session.has_progress and not messagebox.askyesno(
             "Reset Scores",
@@ -223,16 +274,58 @@ class GameController:
         self.board_view.clear_effects()
         self._refresh_all()
 
+        if self.network_conn:
+            self.network_conn.send_message(MessageType.RESET_SCORES)
+
     def show_rules(self) -> None:
         RulesDialog(self.root, self.palette, self.fonts, self.styles)
 
+    def _handle_leave_game(self) -> None:
+        if messagebox.askyesno("Leave Game", "Return to the main menu?", parent=self.root):
+            if self.on_leave_game:
+                self.on_leave_game()
 
-# Alias for compatibility / alternative naming
+    # -- LAN polling loop ----------------------------------------------------
+
+    def _schedule_network_poll(self) -> None:
+        self._process_network_messages()
+        if self.network_conn and self.network_conn.is_connected:
+            self._poll_job = self.root.after(self.NETWORK_POLL_MS, self._schedule_network_poll)
+
+    def _process_network_messages(self) -> None:
+        if not self.network_conn:
+            return
+
+        messages = self.network_conn.poll_messages()
+        for msg in messages:
+            m_type = msg.get("type")
+            if m_type == MessageType.MOVE:
+                r, c = msg["r"], msg["c"]
+                if self.game.is_valid_move(r, c):
+                    result = self.game.make_move(r, c)
+                    self._apply_move_effects(result)
+            elif m_type == MessageType.NEW_ROUND:
+                self.session.round_number = msg.get("round_number", self.session.round_number + 1)
+                self.game.reset(alternate_starting=True)
+                self.board_view.clear_effects()
+                self._refresh_all()
+            elif m_type == MessageType.RESET_SCORES:
+                self.session.reset_all()
+                self.game.reset(alternate_starting=False)
+                self.board_view.clear_effects()
+                self._refresh_all()
+            elif m_type == MessageType.LEAVE:
+                messagebox.showinfo("Game Ended", f"Opponent disconnected ({msg.get('reason', '')}).", parent=self.root)
+                if self.on_leave_game:
+                    self.on_leave_game()
+                break
+
+
+# Alias for backward compatibility
 InfiniteTicTacToeApp = GameController
 
 
 def main() -> None:
-    """Launch the Infinite Tic-Tac-Toe application."""
     root = tk.Tk()
     GameController(root)
     root.mainloop()

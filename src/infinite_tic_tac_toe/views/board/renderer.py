@@ -175,3 +175,5 @@ class BoardRenderer:
                 self._canvas.create_rectangle(p.x, p.y, p.x + p.size, p.y + p.size * 0.6, fill=p.color, outline="")
             else:
                 self._canvas.create_oval(p.x, p.y, p.x + p.size, p.y + p.size, fill=p.color, outline="")
+
+

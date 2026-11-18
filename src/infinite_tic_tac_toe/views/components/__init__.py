@@ -1,4 +1,4 @@
-"""Reusable UI components and sidebar panel."""
+"""Reusable UI components, sidebar panel, and inputs."""
 
 from infinite_tic_tac_toe.views.components.banner import RoundBanner
 from infinite_tic_tac_toe.views.components.button import RoundedButton
@@ -9,6 +9,7 @@ from infinite_tic_tac_toe.views.components.sidebar import (
     Sidebar,
     SidebarActions,
 )
+from infinite_tic_tac_toe.views.components.text_input import StyledTextInput
 
 __all__ = [
     "RoundBanner",
@@ -19,4 +20,5 @@ __all__ = [
     "ButtonSpec",
     "Sidebar",
     "SidebarActions",
+    "StyledTextInput",
 ]

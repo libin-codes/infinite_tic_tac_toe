@@ -23,6 +23,10 @@ Unlike traditional Tic-Tac-Toe which frequently ends in boring stalemates/draws,
 
 ## ✨ Features
 
+- **Multiplayer Modes**:
+  - **On-Device Multiplayer**: Local pass-and-play on a single device.
+  - **LAN Multiplayer**: Automatic room discovery across your local Wi-Fi with simple 4-character codes (e.g. `K9X2`), zero cloud servers, and direct low-latency TCP streaming.
+  - **Selectable Marks**: Host can choose to play as X (Cyan), O (Pink), or Random.
 - **Two-Column Gaming Layout**:
   - **Left Sidebar**: Displays title header, player roster with square X/O avatars, live turn status, and bold win counters on the right, plus action buttons at the bottom.
   - **Right Main Area**: Features a game status header bar and a centered board that dynamically scales to fill any display.
@@ -47,7 +51,7 @@ The codebase is organized following the **Model-View-Controller (MVC)** architec
 
 ```
 src/infinite_tic_tac_toe/
-├── __init__.py                # Package root; exports GameController, InfiniteTicTacToeLogic, etc.
+├── __init__.py                # Package root; exports AppNavigator, GameController, etc.
 │
 ├── models/                    # Domain logic & state (zero GUI dependencies)
 │   ├── game.py                # Core 3×3 board, FIFO move queue (max 3), win validation
@@ -61,15 +65,27 @@ src/infinite_tic_tac_toe/
 │   │   ├── player_card.py     # Player card (avatar, turn indicator, score counter)
 │   │   ├── banner.py          # Floating status/round banner widget
 │   │   ├── button.py          # Custom rounded canvas button
-│   │   └── dialogs.py         # Rules modal dialog ("How to Play")
+│   │   ├── dialogs.py         # Rules modal dialog ("How to Play")
+│   │   ├── emote_bar.py       # Floating reaction bar (emojis)
+│   │   └── text_input.py      # Styled text entry with focus highlights
+│   ├── screens/               # Full window screens
+│   │   ├── main_menu.py       # Initial screen: On-Device vs. LAN selection
+│   │   ├── lan_lobby.py       # LAN setup: nickname entry, create/join room with 4-char code
+│   │   └── game_screen.py     # Active match container (sidebar + board + emote bar)
 │   └── board/                 # Interactive board canvas & animations
 │       ├── view.py            # Canvas board view handling mouse motion, hover & clicks
 │       ├── renderer.py        # Grid lines, marks with age pips, blinking marks, win strikes
 │       ├── metrics.py         # Geometric scaling and coordinate calculations
-│       └── effects.py         # Animation states (confetti, vanish dissolve)
+│       └── effects.py         # Animation states (confetti, vanish dissolve, floating emotes)
+│
+├── network/                   # Pure standard-library LAN networking
+│   ├── protocol.py            # JSON-line message schema (MOVE, REACTION, NEW_ROUND, LEAVE)
+│   ├── discovery.py           # 4-character code generation and UDP broadcast beacons
+│   └── connection.py          # Non-blocking TCP host server and client connection
 │
 └── controllers/               # Coordination & lifecycle
-    └── game_controller.py     # Wires user inputs/events to Model and View updates
+    ├── app_navigator.py       # Screen navigation & LAN handshake orchestration
+    └── game_controller.py     # Wires user inputs/events to Model, View, and Network
 ```
 
 ---

@@ -49,6 +49,11 @@ class Palette:
     x_avatar: str = "#0c4a6e"
     o_avatar: str = "#3d0c18"
 
+    gold: str = "#fbbf24"
+    input_bg: str = "#181926"
+    input_border: str = "#2d2f44"
+    input_focus: str = "#38bdf8"
+
     confetti: Tuple[str, ...] = (
         "#38bdf8", "#f43f5e", "#fbbf24", "#34d399",
         "#a78bfa", "#f472b6", "#60a5fa", "#fde047",
@@ -84,10 +89,21 @@ class FontBook:
         "button_primary": (11, "bold"),
         "button_secondary": (10, "bold"),
         "button_muted": (10, "normal"),
+        "button_large": (15, "bold"),
+        "button_huge": (17, "bold"),
         "round": (18, "bold"),
         "dialog_title": (14, "bold"),
         "dialog_heading": (10, "bold"),
         "dialog_body": (9, "normal"),
+        # New Menu & Lobby Fonts
+        "menu_title": (32, "bold"),
+        "menu_subtitle": (13, "normal"),
+        "card_title": (15, "bold"),
+        "card_desc": (11, "normal"),
+        "input_text": (13, "bold"),
+        "input_large": (14, "bold"),
+        "code_display": (28, "bold"),
+        "link": (10, "normal"),
     }
 
     def __init__(self, root: tk.Misc) -> None:
@@ -115,9 +131,36 @@ class ButtonStyle:
     font: str  # name inside FontBook
     disabled_bg: Optional[str] = None
     disabled_fg: Optional[str] = None
+    border: Optional[str] = None
+    hover_border: Optional[str] = None
+    border_width: int = 1
 
 
 def build_button_styles(p: Palette) -> Dict[str, ButtonStyle]:
+    slate_grey_style = ButtonStyle(
+        bg=p.surface_light,             # "#282a3d"
+        hover=p.surface_light_hover,     # "#383a54"
+        fg="white",
+        font="button_huge",
+        disabled_bg=p.surface,           # "#1e1f2e"
+        disabled_fg="#4b5563",
+        border=p.grid_line,              # "#383952"
+        hover_border=p.x,                # "#38bdf8"
+        border_width=2,
+    )
+
+    lobby_button_style = ButtonStyle(
+        bg=p.surface_light,             # "#282a3d"
+        hover=p.surface_light_hover,     # "#383a54"
+        fg="white",
+        font="button_large",
+        disabled_bg=p.surface,           # "#1e1f2e"
+        disabled_fg="#4b5563",
+        border=p.grid_line,              # "#383952"
+        hover_border=p.x,                # "#38bdf8"
+        border_width=2,
+    )
+
     return {
         "primary": ButtonStyle(
             p.accent,
@@ -143,4 +186,15 @@ def build_button_styles(p: Palette) -> Dict[str, ButtonStyle]:
             disabled_bg=p.surface,
             disabled_fg="#4b5563",
         ),
+        "cyan": ButtonStyle(
+            "#0284c7",
+            "#0369a1",
+            "white",
+            "button_primary",
+            disabled_bg="#1d2238",
+            disabled_fg="#4b5563",
+        ),
+        "menu_primary": slate_grey_style,
+        "menu_secondary": slate_grey_style,
+        "lobby_action": lobby_button_style,
     }

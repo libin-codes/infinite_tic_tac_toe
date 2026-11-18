@@ -1,6 +1,7 @@
+import tkinter as tk
 import unittest
 from unittest.mock import patch
-import tkinter as tk
+
 from infinite_tic_tac_toe.controllers import GameController, InfiniteTicTacToeApp
 from infinite_tic_tac_toe.views import blend_hex_colors
 

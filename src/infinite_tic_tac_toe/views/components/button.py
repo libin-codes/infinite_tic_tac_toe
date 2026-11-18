@@ -1,4 +1,4 @@
-"""Canvas-based rounded button with hover and disabled states."""
+"""Canvas-based button with hover, border, and custom corner radius support."""
 
 from __future__ import annotations
 
@@ -10,11 +10,7 @@ from infinite_tic_tac_toe.views.theme import ButtonStyle, FontBook
 
 
 class RoundedButton(tk.Canvas):
-    """Canvas button with smooth rounded corners and a hover effect.
-
-    Corner radius is a fraction of the button's own height, so the button
-    looks the same at any size. Size it with ``place``/``pack(fill=...)``.
-    """
+    """Canvas button with smooth rounded or sharp rectangular corners and hover states."""
 
     RADIUS_RATIO = 0.28
 
@@ -28,6 +24,10 @@ class RoundedButton(tk.Canvas):
         parent_bg: str,
         height: Optional[int] = None,
         width: Optional[int] = None,
+        corner_radius: Optional[float] = None,
+        border_color: Optional[str] = None,
+        hover_border_color: Optional[str] = None,
+        border_width: Optional[int] = None,
     ) -> None:
         options: Dict[str, Any] = {"highlightthickness": 0, "cursor": "hand2", "bg": parent_bg}
         if height:
@@ -41,6 +41,11 @@ class RoundedButton(tk.Canvas):
         self._style = style
         self._fonts = fonts
         self._current_bg = style.bg
+        self._corner_radius = corner_radius
+        self._border_color = border_color
+        self._hover_border_color = hover_border_color
+        self._border_width = border_width
+        self._is_hovered = False
         self._enabled = True
 
         self.bind("<Configure>", lambda e: self.redraw())
@@ -55,6 +60,7 @@ class RoundedButton(tk.Canvas):
     def _set_hover(self, hovering: bool) -> None:
         if not self._enabled:
             return
+        self._is_hovered = hovering
         self._current_bg = self._style.hover if hovering else self._style.bg
         self.redraw()
 
@@ -77,5 +83,18 @@ class RoundedButton(tk.Canvas):
             return
         bg = self._current_bg if self._enabled else (self._style.disabled_bg or self._style.bg)
         fg = self._style.fg if self._enabled else (self._style.disabled_fg or self._style.fg)
-        draw_rounded_rect(self, 1, 1, w - 1, h - 1, radius=h * self.RADIUS_RATIO, fill=bg, outline="")
+
+        border = (
+            (self._hover_border_color if self._is_hovered else self._border_color)
+            or (self._style.hover_border if self._is_hovered else self._style.border)
+            or ""
+        )
+        border_w = self._border_width if self._border_width is not None else getattr(self._style, "border_width", 1)
+
+        radius = self._corner_radius if self._corner_radius is not None else (h * self.RADIUS_RATIO)
+        if radius <= 0:
+            self.create_rectangle(1, 1, w - 1, h - 1, fill=bg, outline=border, width=border_w)
+        else:
+            draw_rounded_rect(self, 1, 1, w - 1, h - 1, radius=radius, fill=bg, outline=border, width=border_w)
+
         self.create_text(w / 2, h / 2, text=self._text, fill=fg, font=self._fonts[self._style.font])

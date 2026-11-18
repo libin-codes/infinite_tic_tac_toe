@@ -1,4 +1,4 @@
-"""Views layer: UI components, board renderers, and theme definitions."""
+"""Views layer: UI screens, components, board renderers, and theme definitions."""
 
 from infinite_tic_tac_toe.views.board import (
     BoardMetrics,
@@ -17,12 +17,18 @@ from infinite_tic_tac_toe.views.components import (
     RulesDialog,
     Sidebar,
     SidebarActions,
+    StyledTextInput,
 )
 from infinite_tic_tac_toe.views.drawing import (
     blend_hex_colors,
     draw_o,
     draw_rounded_rect,
     draw_x,
+)
+from infinite_tic_tac_toe.views.screens import (
+    GameScreen,
+    LanLobbyScreen,
+    MainMenuScreen,
 )
 from infinite_tic_tac_toe.views.theme import (
     DEFAULT_WINDOW,
@@ -66,4 +72,9 @@ __all__ = [
     "ButtonSpec",
     "SidebarActions",
     "Sidebar",
+    "StyledTextInput",
+    # Screens
+    "MainMenuScreen",
+    "LanLobbyScreen",
+    "GameScreen",
 ]
