@@ -1,5 +1,5 @@
 import unittest
-from infinite_tic_tac_toe.logic import InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.models import GameSession, InfiniteTicTacToeLogic
 
 
 class TestInfiniteTicTacToeLogic(unittest.TestCase):
@@ -91,6 +91,36 @@ class TestInfiniteTicTacToeLogic(unittest.TestCase):
         self.assertIn((0, 0), res["winning_line"])
         self.assertIn((0, 1), res["winning_line"])
         self.assertIn((0, 2), res["winning_line"])
+
+
+class TestGameSession(unittest.TestCase):
+    def setUp(self):
+        self.session = GameSession()
+
+    def test_initial_session(self):
+        self.assertEqual(self.session.round_number, 1)
+        self.assertEqual(self.session.scores, {"X": 0, "O": 0})
+        self.assertFalse(self.session.has_progress)
+
+    def test_record_win_and_progress(self):
+        self.session.record_win("X")
+        self.assertEqual(self.session.scores["X"], 1)
+        self.assertEqual(self.session.scores["O"], 0)
+        self.assertTrue(self.session.has_progress)
+
+    def test_next_round(self):
+        r = self.session.next_round()
+        self.assertEqual(r, 2)
+        self.assertEqual(self.session.round_number, 2)
+        self.assertTrue(self.session.has_progress)
+
+    def test_reset_all(self):
+        self.session.record_win("O")
+        self.session.next_round()
+        self.session.reset_all()
+        self.assertEqual(self.session.round_number, 1)
+        self.assertEqual(self.session.scores, {"X": 0, "O": 0})
+        self.assertFalse(self.session.has_progress)
 
 
 if __name__ == "__main__":

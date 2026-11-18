@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
-from infinite_tic_tac_toe.gui.theme import GRID_SIZE, Cell
+from infinite_tic_tac_toe.models.game import Cell
+from infinite_tic_tac_toe.views.theme import GRID_SIZE
 
 
 @dataclass(frozen=True)

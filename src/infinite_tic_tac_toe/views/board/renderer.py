@@ -6,11 +6,11 @@ import math
 import tkinter as tk
 from typing import Any, Dict, Optional, Tuple
 
-from infinite_tic_tac_toe.gui.board.effects import BoardViewState, VanishEffect
-from infinite_tic_tac_toe.gui.board.metrics import BoardMetrics
-from infinite_tic_tac_toe.gui.drawing import blend_hex_colors, draw_o, draw_rounded_rect, draw_x
-from infinite_tic_tac_toe.gui.theme import GRID_SIZE, Cell, Palette
-from infinite_tic_tac_toe.logic import InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.models.game import Cell, InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.views.board.effects import BoardViewState, VanishEffect
+from infinite_tic_tac_toe.views.board.metrics import BoardMetrics
+from infinite_tic_tac_toe.views.drawing import blend_hex_colors, draw_o, draw_rounded_rect, draw_x
+from infinite_tic_tac_toe.views.theme import GRID_SIZE, Palette
 
 DEFAULT_VANISH_STEPS = 4
 

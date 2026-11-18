@@ -1,17 +1,21 @@
 import unittest
 from unittest.mock import patch
 import tkinter as tk
-from infinite_tic_tac_toe.gui import InfiniteTicTacToeApp, blend_hex_colors
+from infinite_tic_tac_toe.controllers import GameController, InfiniteTicTacToeApp
+from infinite_tic_tac_toe.views import blend_hex_colors
 
 
 class TestGUI(unittest.TestCase):
     def setUp(self):
         self.root = tk.Tk()
         self.root.withdraw()
-        self.app = InfiniteTicTacToeApp(self.root)
+        self.app = GameController(self.root)
 
     def tearDown(self):
         self.root.destroy()
+
+    def test_alias(self):
+        self.assertIs(GameController, InfiniteTicTacToeApp)
 
     def test_blend_colors(self):
         c = blend_hex_colors("#000000", "#ffffff", 0.5)

@@ -5,8 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Any, Callable, Dict, Optional
 
-from infinite_tic_tac_toe.gui.drawing import draw_rounded_rect
-from infinite_tic_tac_toe.gui.theme import ButtonStyle, FontBook
+from infinite_tic_tac_toe.views.drawing import draw_rounded_rect
+from infinite_tic_tac_toe.views.theme import ButtonStyle, FontBook
 
 
 class RoundedButton(tk.Canvas):

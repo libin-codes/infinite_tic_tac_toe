@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Optional
 
-from infinite_tic_tac_toe.gui.theme import FontBook, Palette
+from infinite_tic_tac_toe.views.theme import FontBook, Palette
 
 
 class RoundBanner(tk.Label):

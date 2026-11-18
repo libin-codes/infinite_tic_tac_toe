@@ -7,11 +7,11 @@ import random
 import tkinter as tk
 from typing import Callable, Optional
 
-from infinite_tic_tac_toe.gui.board.effects import BoardViewState, ConfettiParticle, VanishEffect
-from infinite_tic_tac_toe.gui.board.metrics import BoardMetrics
-from infinite_tic_tac_toe.gui.board.renderer import BoardRenderer
-from infinite_tic_tac_toe.gui.theme import GRID_SIZE, Cell, Palette
-from infinite_tic_tac_toe.logic import InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.models.game import Cell, InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.views.board.effects import BoardViewState, ConfettiParticle, VanishEffect
+from infinite_tic_tac_toe.views.board.metrics import BoardMetrics
+from infinite_tic_tac_toe.views.board.renderer import BoardRenderer
+from infinite_tic_tac_toe.views.theme import GRID_SIZE, Palette
 
 
 class BoardView(tk.Frame):

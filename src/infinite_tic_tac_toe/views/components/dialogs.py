@@ -5,8 +5,8 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Dict, Tuple
 
-from infinite_tic_tac_toe.gui.theme import ButtonStyle, FontBook, Palette
-from infinite_tic_tac_toe.gui.widgets.button import RoundedButton
+from infinite_tic_tac_toe.views.components.button import RoundedButton
+from infinite_tic_tac_toe.views.theme import ButtonStyle, FontBook, Palette
 
 RULES: Tuple[Tuple[str, str], ...] = (
     ("1. Max 3 Marks Per Player", "Each player can only maintain up to 3 marks simultaneously on the 3x3 board."),

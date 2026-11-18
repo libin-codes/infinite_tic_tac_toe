@@ -7,7 +7,8 @@ import tkinter.font as tkfont
 from dataclasses import dataclass
 from typing import Dict, Literal, Optional, Tuple
 
-Cell = Tuple[int, int]
+from infinite_tic_tac_toe.models.game import Cell
+
 FontWeight = Literal["normal", "bold"]
 
 GRID_SIZE = 3

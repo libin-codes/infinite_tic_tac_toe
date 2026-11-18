@@ -6,7 +6,7 @@ import random
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
-from infinite_tic_tac_toe.gui.theme import Cell
+from infinite_tic_tac_toe.models.game import Cell
 
 
 class ConfettiParticle:

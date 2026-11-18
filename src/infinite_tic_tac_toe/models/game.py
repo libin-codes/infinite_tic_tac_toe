@@ -1,11 +1,13 @@
-"""Core game logic for Infinite Tic-Tac-Toe."""
+"""Core game logic and board state for Infinite Tic-Tac-Toe."""
 
-from typing import List, Optional, Tuple, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
+
+Cell = Tuple[int, int]
 
 
 class InfiniteTicTacToeLogic:
     """Manages the board state and rules for Infinite Tic-Tac-Toe.
-    
+
     Each player ('X' and 'O') may have at most MAX_PIECES (3) on the board.
     When a player has 3 marks and makes a move, their oldest mark vanishes,
     and their new mark is added.
@@ -29,10 +31,10 @@ class InfiniteTicTacToeLogic:
     def __init__(self, starting_player: str = "X") -> None:
         self.starting_player = starting_player
         self.board: List[List[Optional[str]]] = [[None for _ in range(3)] for _ in range(3)]
-        self.player_moves: Dict[str, List[Tuple[int, int]]] = {"X": [], "O": []}
+        self.player_moves: Dict[str, List[Cell]] = {"X": [], "O": []}
         self.current_player: str = starting_player
         self.winner: Optional[str] = None
-        self.winning_line: Optional[List[Tuple[int, int]]] = None
+        self.winning_line: Optional[List[Cell]] = None
         self.game_over: bool = False
 
     def reset(self, alternate_starting: bool = False) -> None:
@@ -59,7 +61,7 @@ class InfiniteTicTacToeLogic:
             return False
         return self.board[r][c] is None
 
-    def get_expiring_piece(self, player: Optional[str] = None) -> Optional[Tuple[int, int]]:
+    def get_expiring_piece(self, player: Optional[str] = None) -> Optional[Cell]:
         """Return the coordinate of the piece that will vanish next for the given player."""
         target_player = player or self.current_player
         moves = self.player_moves[target_player]
@@ -69,7 +71,7 @@ class InfiniteTicTacToeLogic:
 
     def get_piece_info(self, r: int, c: int) -> Optional[Dict[str, Any]]:
         """Return player and age metadata for a cell (r, c).
-        
+
         age: 1 (oldest, vanishes next if 3 on board), 2 (middle), 3 (newest).
         """
         player = self.board[r][c]
@@ -97,14 +99,14 @@ class InfiniteTicTacToeLogic:
 
     def make_move(self, r: int, c: int) -> Dict[str, Any]:
         """Make a move at (r, c).
-        
+
         Returns a dict summarizing the outcome of the move.
         """
         if not self.is_valid_move(r, c):
             return {"success": False, "reason": "Invalid move"}
 
         player = self.current_player
-        vanished_piece: Optional[Tuple[int, int]] = None
+        vanished_piece: Optional[Cell] = None
 
         # Remove oldest piece if player already has MAX_PIECES
         if len(self.player_moves[player]) >= self.MAX_PIECES:
@@ -135,7 +137,7 @@ class InfiniteTicTacToeLogic:
             "game_over": self.game_over,
         }
 
-    def _check_win(self, player: str) -> Optional[List[Tuple[int, int]]]:
+    def _check_win(self, player: str) -> Optional[List[Cell]]:
         """Check if the given player has formed a winning line."""
         for combo in self.WINNING_COMBINATIONS:
             if all(self.board[r][c] == player for r, c in combo):

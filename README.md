@@ -41,6 +41,39 @@ Unlike traditional Tic-Tac-Toe which frequently ends in boring stalemates/draws,
 
 ---
 
+## 🏗️ Architecture (MVC)
+
+The codebase is organized following the **Model-View-Controller (MVC)** architectural pattern to ensure clean separation of concerns and maintainability:
+
+```
+src/infinite_tic_tac_toe/
+├── __init__.py                # Package root; exports GameController, InfiniteTicTacToeLogic, etc.
+│
+├── models/                    # Domain logic & state (zero GUI dependencies)
+│   ├── game.py                # Core 3×3 board, FIFO move queue (max 3), win validation
+│   └── session.py             # Match session tracking (scores, round progression)
+│
+├── views/                     # Presentation, styling & UI components
+│   ├── theme.py               # Color palettes, font book, button styles, window constants
+│   ├── drawing.py             # Canvas rendering primitives (X, O, rounded rects, blending)
+│   ├── components/            # Reusable UI widgets
+│   │   ├── sidebar.py         # Left panel (title, roster, action buttons)
+│   │   ├── player_card.py     # Player card (avatar, turn indicator, score counter)
+│   │   ├── banner.py          # Floating status/round banner widget
+│   │   ├── button.py          # Custom rounded canvas button
+│   │   └── dialogs.py         # Rules modal dialog ("How to Play")
+│   └── board/                 # Interactive board canvas & animations
+│       ├── view.py            # Canvas board view handling mouse motion, hover & clicks
+│       ├── renderer.py        # Grid lines, marks with age pips, blinking marks, win strikes
+│       ├── metrics.py         # Geometric scaling and coordinate calculations
+│       └── effects.py         # Animation states (confetti, vanish dissolve)
+│
+└── controllers/               # Coordination & lifecycle
+    └── game_controller.py     # Wires user inputs/events to Model and View updates
+```
+
+---
+
 ## 🚀 Running the Game
 
 You can run the game using either standard Python or `uv`:

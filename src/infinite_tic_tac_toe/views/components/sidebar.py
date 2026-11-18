@@ -6,9 +6,10 @@ import tkinter as tk
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Tuple
 
-from infinite_tic_tac_toe.gui.theme import ButtonStyle, FontBook, Palette
-from infinite_tic_tac_toe.gui.widgets import PlayerCard, RoundedButton
-from infinite_tic_tac_toe.logic import InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.models.game import InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.views.components.button import RoundedButton
+from infinite_tic_tac_toe.views.components.player_card import PlayerCard
+from infinite_tic_tac_toe.views.theme import ButtonStyle, FontBook, Palette
 
 
 @dataclass(frozen=True)

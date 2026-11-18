@@ -6,27 +6,29 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import Dict, Optional
 
-from infinite_tic_tac_toe.gui.board import BoardView
-from infinite_tic_tac_toe.gui.sidebar import Sidebar, SidebarActions
-from infinite_tic_tac_toe.gui.theme import (
+from infinite_tic_tac_toe.models import GameSession, InfiniteTicTacToeLogic
+from infinite_tic_tac_toe.views import (
     DEFAULT_WINDOW,
     MIN_WINDOW,
     PALETTE,
+    BoardView,
     FontBook,
+    RoundBanner,
+    RulesDialog,
+    Sidebar,
+    SidebarActions,
     build_button_styles,
 )
-from infinite_tic_tac_toe.gui.widgets import RoundBanner, RulesDialog
-from infinite_tic_tac_toe.logic import InfiniteTicTacToeLogic
 
 
-class InfiniteTicTacToeApp:
-    """Main window: owns the game and scores and wires them to the views."""
+class GameController:
+    """Main application controller: wires game model, session, and views."""
 
-    # Pane proportions (grid weights): sidebar 2 : board area 5  (~29% / 71%)
+    # Pane proportions (grid weights): sidebar 2 : board area 5 (~29% / 71%)
     SIDEBAR_WEIGHT = 2
     MAIN_WEIGHT = 5
 
-    # Floating round banner: distance from the top as a fraction of window height
+    # Floating round banner: distance from top as fraction of window height
     BANNER_TOP = 0.04
 
     # Font scaling
@@ -38,8 +40,7 @@ class InfiniteTicTacToeApp:
         self.root = root
         self.palette = PALETTE
         self.game = InfiniteTicTacToeLogic()
-        self.scores: Dict[str, int] = {"X": 0, "O": 0}
-        self.round_number = 1
+        self.session = GameSession()
         self.is_fullscreen = False
         self._scale = 1.0
 
@@ -50,6 +51,24 @@ class InfiniteTicTacToeApp:
         self._build_layout()
         self._bind_events()
         self._refresh_all()
+
+    @property
+    def scores(self) -> Dict[str, int]:
+        """Convenience property for session scores."""
+        return self.session.scores
+
+    @scores.setter
+    def scores(self, val: Dict[str, int]) -> None:
+        self.session.scores = val
+
+    @property
+    def round_number(self) -> int:
+        """Convenience property for current round number."""
+        return self.session.round_number
+
+    @round_number.setter
+    def round_number(self, val: int) -> None:
+        self.session.round_number = val
 
     # -- window --------------------------------------------------------------
 
@@ -138,16 +157,16 @@ class InfiniteTicTacToeApp:
     # -- view updates --------------------------------------------------------
 
     def _refresh_all(self) -> None:
-        self.sidebar.update_players(self.game, self.scores)
+        self.sidebar.update_players(self.game, self.session.scores)
         self.sidebar.set_button_enabled("new_round", not self.game.is_empty)
         self._show_round()
         self.board_view.render()
 
     def _show_round(self) -> None:
-        self.banner.set(f"ROUND {self.round_number}")
+        self.banner.set(f"ROUND {self.session.round_number}")
 
     def _show_winner(self, winner: str) -> None:
-        self.banner.set(f"PLAYER {winner} WINS ROUND {self.round_number}!")
+        self.banner.set(f"PLAYER {winner} WINS ROUND {self.session.round_number}!")
 
     # -- game flow -----------------------------------------------------------
 
@@ -164,12 +183,12 @@ class InfiniteTicTacToeApp:
 
         if result["game_over"]:
             winner = result["winner"]
-            self.scores[winner] += 1
-            self.sidebar.update_players(self.game, self.scores)
+            self.session.record_win(winner)
+            self.sidebar.update_players(self.game, self.session.scores)
             self._show_winner(winner)
             self.board_view.play_win()
         else:
-            self.sidebar.update_players(self.game, self.scores)
+            self.sidebar.update_players(self.game, self.session.scores)
             self._show_round()
         self.sidebar.set_button_enabled("new_round", not self.game.is_empty)
         self.board_view.render()
@@ -186,22 +205,20 @@ class InfiniteTicTacToeApp:
             ):
                 return
 
-        self.round_number += 1
+        self.session.next_round()
         self.game.reset(alternate_starting=True)
         self.board_view.clear_effects()
         self._refresh_all()
 
     def on_reset_all(self) -> None:
-        has_progress = self.round_number > 1 or any(self.scores.values())
-        if has_progress and not messagebox.askyesno(
+        if self.session.has_progress and not messagebox.askyesno(
             "Reset Scores",
             "Are you sure you want to reset all scores and start over?",
             parent=self.root,
         ):
             return
 
-        self.scores = {"X": 0, "O": 0}
-        self.round_number = 1
+        self.session.reset_all()
         self.game.reset(alternate_starting=False)
         self.board_view.clear_effects()
         self._refresh_all()
@@ -210,9 +227,14 @@ class InfiniteTicTacToeApp:
         RulesDialog(self.root, self.palette, self.fonts, self.styles)
 
 
+# Alias for compatibility / alternative naming
+InfiniteTicTacToeApp = GameController
+
+
 def main() -> None:
+    """Launch the Infinite Tic-Tac-Toe application."""
     root = tk.Tk()
-    InfiniteTicTacToeApp(root)
+    GameController(root)
     root.mainloop()
 
 
